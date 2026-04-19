@@ -44,20 +44,25 @@ def download():
 
 @app.route("/upload-temp", methods=["POST"])
 def upload_temp():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+    print("FILES:", request.files)
 
-    file = request.files["file"]
+    if "file" not in request.files:
+        return jsonify({
+            "error": "No file uploaded",
+            "received_files": list(request.files.keys()),
+            "content_type": request.content_type
+        }), 400
+
+    uploaded_file = request.files["file"]
 
     filename = f"{uuid.uuid4()}.mp4"
     filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 
-    file.save(filepath)
+    uploaded_file.save(filepath)
 
     return jsonify({
         "video_url": request.host_url + "files/" + filename
     })
-    
 @app.route("/files/<filename>")
 def files(filename):
    return send_from_directory('downloads', filename, as_attachment=False)
