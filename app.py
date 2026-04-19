@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-DOWNLOAD_FOLDER = "static"
+DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 @app.route("/download", methods=["POST"])
@@ -13,22 +13,36 @@ def download():
     data = request.json
     reel_url = data.get("url")
 
-    filename = f"{uuid.uuid4()}.mp4"
-    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+    unique_id = str(uuid.uuid4())
+    output_template = os.path.join(DOWNLOAD_FOLDER, f"{unique_id}.%(ext)s")
 
-    subprocess.run([
-        "yt-dlp",
-        "-o", filepath,
-        reel_url
-    ])
+    result = subprocess.run(
+        [
+            "yt-dlp",
+            "-f", "mp4",
+            "-o", output_template,
+            reel_url
+        ],
+        capture_output=True,
+        text=True
+    )
+
+    # Find the downloaded file
+    files = [f for f in os.listdir(DOWNLOAD_FOLDER) if f.startswith(unique_id)]
+
+    if not files:
+        return jsonify({
+            "error": "Download failed",
+            "details": result.stderr
+        }), 500
+
+    filename = files[0]
 
     return jsonify({
         "video_url": request.host_url + "files/" + filename
     })
-
 @app.route("/files/<filename>")
 def files(filename):
-    return send_from_directory(DOWNLOAD_FOLDER, filename)
-
+   return send_from_directory('downloads', filename, as_attachment=False)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
