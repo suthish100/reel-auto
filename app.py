@@ -41,6 +41,19 @@ def download():
     return jsonify({
         "video_url": request.host_url + "files/" + filename
     })
+
+@app.route("/upload-temp", methods=["POST"])
+def upload_temp():
+    file = request.files["file"]
+
+    filename = f"{uuid.uuid4()}.mp4"
+    path = os.path.join(DOWNLOAD_FOLDER, filename)
+    file.save(path)
+
+    return jsonify({
+        "video_url": request.host_url + "files/" + filename
+    })
+    
 @app.route("/files/<filename>")
 def files(filename):
    return send_from_directory('downloads', filename, as_attachment=False)
