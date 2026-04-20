@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file
 import subprocess
 import uuid
 import os
@@ -63,8 +63,26 @@ def upload_temp():
     return jsonify({
         "video_url": request.host_url + "files/" + filename
     })
+from flask import send_file
+
 @app.route("/files/<filename>")
 def files(filename):
-   return send_from_directory('downloads', filename, as_attachment=False)
+    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({"error": "File not found"}), 404
+
+    response = send_file(
+        filepath,
+        mimetype="video/mp4",
+        as_attachment=False,
+        download_name=filename
+    )
+
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    response.headers["Accept-Ranges"] = "bytes"
+
+    return response
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
